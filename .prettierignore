@@ -1,0 +1,6 @@
+dist
+playwright-report
+test-results
+node_modules
+.claude
+.entire
