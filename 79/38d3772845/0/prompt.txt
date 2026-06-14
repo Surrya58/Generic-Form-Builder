@@ -1,0 +1,120 @@
+continue
+
+---
+
+can you run the dev server at this stage
+
+---
+
+please continue with the above task
+
+---
+
+Continuing the form builder project. We already have the data model, storage layer, the four pure engines (conditionEngine,
+  calculationEngine, validation, templateValidation), the field registry (each type's FillRenderer + toPdfRows), the shared accessible
+  primitives (Radio/Tiles, Dropdown, Modal, <SortableList>, AutosaveStatus, QuotaRecoveryDialog), and the Builder UI. This final step
+  builds everything that's left: Fill mode, the PDF export, the home + responses screens with navigation, and the accessibility /
+  responsive / CI hardening that makes it production-grade. Keep using React Context + useReducer, keep all logic in the engines, and
+  write tests as you go.
+
+  Part A — Fill mode (/fill/:templateId/:instanceId)
+
+  "New Response" on a template creates a fresh draft instance and opens it here. Render each field via its registry FillRenderer; the
+  form is driven entirely by the engines.
+
+  Live runtime: on every value change, run conditionEngine.resolve for each field's effective {visible, required}, build effective values
+  (a hidden field's value is absent), and feed calculationEngine so calculations update in real time. A calculation is read-only and its
+  empty-set result shows as a blank/em-dash, distinct from a real 0. The required asterisk (aria-required) reacts live when a condition
+  makes a field required. Make it feel intentional: animate show/hide (~200ms), preserve the scroll anchor so the current field never
+  jumps on reflow, batch cascading fixpoint passes into one transition, announce appeared/disappeared fields via a polite aria-live
+  region, and never steal focus when a sibling field is removed.
+
+  Loading/prefill/autosave: apply each date field's "prefill today" only on first open of a new instance (never overwrite a restored
+  value). Autosave entered values to the instance draft via the autosave hook (debounced; flushed on blur/visibilitychange/pagehide) with
+  the AutosaveStatus pill; refresh mid-fill restores everything with logic recomputed.
+
+  Validation & submit: the Submit button stays enabled and validates on click. Validate only visible fields; a field shows no error until
+  the first submit, then switches to debounced live validation. Hidden fields are never validated, never in the error summary, never
+  focused — even if marked required. On failure, render an accessible error summary (aria-live, focusable, errors in form order as
+  clickable anchors that jump+focus the field) and focus the first invalid field; messages are type-aware ("Enter at least 3 characters
+  (you have 1)") and conveyed by more than color (border + icon + text + aria-invalid + aria-describedby). Drive Submit through idle →
+  validating → saving with a double-submit lock. On success, build an immutable FormInstance (snapshot the template into
+  templateSnapshot, store values by field id + timestamp) and clear the draft. Submit-failure safety net: if the write returns a non-ok
+  StorageResult, keep the draft, stay on the form, and show the QuotaRecoveryDialog. Then transition to a dedicated success screen (not a
+  toast) with the title, formatted timestamp, the Download-PDF button as the hero, and next actions (new response / back to list); move
+  focus to its heading and reset scroll.
+
+  Part B — PDF export (browser-native, no libraries)
+
+  Build a hand-rolled PDF writer in src/pdf. No third-party PDF library. A PDF is a structured text file: emit a %PDF-1.7 header;
+  numbered objects forming Catalog → Pages → Page; a content stream per page using text operators (BT/ET, /F1 12 Tf, x y Td with
+  bottom-left origin, (text) Tj); a font object using base-14 Helvetica / Helvetica-Bold (no embedding); then the xref table of byte
+  offsets and the trailer + startxref + %%EOF. Track each object's running byte offset for the xref. Escape text ((, ), \), wrap lines by
+  Helvetica glyph widths, and paginate past the bottom margin.
+
+  buildPdf(snapshot: TemplateSnapshot, effectiveValues, visibleFieldIds: string[], submittedAt): Blob
+  Include the form title, submission timestamp, and all visible fields in form order via each field's toPdfRows; render section headers
+  as sized headings; render file fields as a reference (📎 name · type · size + "(file content not included in this export)"). Hidden
+  fields are excluded — compute visibleFieldIds by running conditionEngine over the instance's templateSnapshot.fields + stored values,
+  so the export is deterministic even if the live template later changed. Download via Blob + a temporary <a download> + revokeObjectURL.
+  Never store the PDF — "Re-download" regenerates it from the stored instance.
+
+  Part C — Home & responses screens + navigation
+
+  Templates list (/): cards showing title, field count, response count, last-modified. A "New Template" button opens the Builder with a
+  blank template; each card has "New Response" (fresh Fill draft) and clicking the card opens it in the Builder. Per-card quick actions:
+  edit, respond, view responses, duplicate, delete. Add a toolbar with debounced search + sort (last-modified default, created, title
+  A–Z, most responses) + filter (has-responses / has-drafts), with state that's persisted and deep-linkable. Show a friendly first-run
+  empty state when there are no templates.
+
+  Responses list (/templates/:templateId/instances): a table of submitted instances — submission timestamp (relative + absolute tooltip),
+  a derived summary column, a view action, and "Re-download PDF" (regenerates from the snapshot). Full keyboard roving focus across
+  rows.
+
+  Destructive actions & navigation: deleting a template uses a safe-reversible cascade — a confirmation dialog naming the exact response
+  count ("…and its N responses — can't be undone"), then cascade-delete, then a ~6s Undo toast backed by the temporary fb:trash snapshot
+  (purged only if Undo isn't clicked). Deleting an instance is confirm-gated. Add deep-link guards (a friendly "this form no longer
+  exists" for missing/invalid IDs on any route) and correct back-button semantics (New Response pushes, post-Submit replaces). Virtualize
+  long lists past a documented threshold.
+
+  Part D — Accessibility, responsive, polish & CI
+
+  - Error boundaries around Builder and Fill so one bad field config can't white-screen the app.
+  - Accessibility pass: accessible names on every icon-only button (grip, up/down, delete, add-condition, etc.); a high-contrast,
+  never-clipped visible focus indicator on all custom controls; focus management on delete/undo (move focus to a sensible sibling, not
+  <body>); the three hand-built primitives fully meet their ARIA patterns (radiogroup, combobox/listbox, modal focus trap+restore) with
+  identical behavior across the three single-select displays; aria-describedby wiring on fill inputs; calculation results mirrored into a
+  polite aria-live region. Respect prefers-reduced-motion.
+  - Responsive / mobile: collapse the three-panel builder into tabbed bottom-sheet drawers on small screens (canvas as the base layer,
+  palette via an "Add field" FAB, config as a drawer); ≥44×44px touch targets; single-column fill layout with labels above inputs;
+  touch-optimized select variants; long-press to drag vs tap to select on touch (dnd-kit TouchSensor with a press delay) with autoscroll
+  + page-scroll lock; a sticky submit/save bar respecting iOS safe-area-inset-bottom; handle on-screen-keyboard overlap via
+  VisualViewport (scroll the focused input into view).
+  - One unified accessible toast/snackbar system (role="status", role="alert" for errors) used for Undo-delete, Saved, Duplicated,
+  PDF-exported, and Discard.
+  - README documenting: the conditional-logic semantics (independent rules, last-match-wins per axis — there's no AND/OR), the full
+  edge-case decisions (hidden fields never validated/exported, empty-set calc is blank, instance-snapshots-template, safe-reversible
+  delete), the localStorage + on-demand-PDF storage rationale, and how to add an 11th field type (one file + one registry entry).
+  - CI: a GitHub Actions workflow running typecheck + ESLint + unit tests (with the 100% src/domain coverage gate) + Playwright against
+  the built app.
+
+  Tests to write now
+
+  - Unit: PDF writer (%PDF header, escaping, pagination, hidden fields absent, file-metadata note).
+  - E2E (Playwright): fill each type; validation blocks + focuses first invalid and the summary anchors work; conditional show/hide is
+  live with no scroll jump; hidden-required doesn't block; calculations update live; refresh mid-fill restores values; Submit saves an
+  instance and downloads a PDF (file begins with %PDF, a hidden field's label is absent); Submit under simulated quota keeps the draft +
+  shows recovery; create → respond → list → re-download after editing the template (snapshot integrity); delete template removes its
+  instances after a count-named confirm and Undo restores them; deep-link guard for a missing ID; key a11y checks on the primitives. Use
+  a fixed Date, seed storage via addInitScript, and use Page Objects + test-data builders.
+
+  You're done when (whole project)
+
+  - Green CI; typecheck + ESLint clean with no any; README complete.
+  - Every unit + E2E test passes; the app works correctly after a full page refresh on every screen.
+  - All 9 field types build and fill correctly; conditional logic handles chained conditions, hidden-but-required, and real-time updates;
+  the PDF reads like a real export; and adding a hypothetical 11th field type is one file + one registry entry.
+
+---
+
+please continue with medium effort to complete the above given tasks.
