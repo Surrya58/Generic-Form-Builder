@@ -15,6 +15,43 @@ React 18 + TypeScript (`strict`, no `any`) · Vite · Tailwind · `@dnd-kit` · 
 Vitest + Testing Library (unit/component) · Playwright (E2E). PDF export is a **hand-rolled,
 browser-native byte writer** — no third-party PDF library.
 
+## Getting started
+
+Requires Node 20+.
+
+```bash
+npm install          # install dependencies
+npm run dev          # dev server (http://localhost:5173, or the next free port)
+npm test             # unit + component tests (Vitest)
+npm run test:e2e     # end-to-end tests (Playwright)
+npm run build        # typecheck + production build
+```
+
+## Session tracking (entire.io)
+
+This repo is wired for [entire.io](https://entire.io) session & commit tracking, scoped to
+**this repository only**. The shared config is committed (`.entire/settings.json`,
+`.claude/settings.json`); the actual git hooks are installed **per-clone** under `.git/hooks/`
+and are never global — no other repository on your machine is affected.
+
+After cloning, install the CLI once and enable it in the repo:
+
+```bash
+# 1. Install the Entire CLI (user-local, into ~/.local/bin)
+curl -fsSL https://entire.io/install.sh | bash
+#    make sure ~/.local/bin is on your PATH, then restart your shell
+
+# 2. Install this repo's local git hooks (idempotent, non-interactive)
+entire enable --agent claude-code
+
+# 3. (optional) Log in to sync checkpoints to your Entire account
+entire login
+```
+
+Check it with `entire status` (expects `Enabled · agent: Claude Code`). The installed hooks
+(`post-commit`, `prepare-commit-msg`, `pre-push`, …) live only in `.git/hooks/`, so they never
+leak to other repos. Run `entire disable` to turn it off locally.
+
 ## Architecture
 
 ```
