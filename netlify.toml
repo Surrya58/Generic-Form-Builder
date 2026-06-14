@@ -1,0 +1,14 @@
+# Netlify deploy config for the Vite + React (SPA) build.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback: serve index.html for all client-side routes (React Router) so
+# deep links like /builder/:id and a full-page refresh resolve instead of 404ing.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
