@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { createRepository } from '../../persistence'
+import { createMockStorageAdapter } from '../../persistence/testFixtures'
 import { makeTestTemplate, singleLineTextField } from '../../domain/testFixtures'
 import { BuilderProvider, useBuilder } from '../../state'
+import { RepositoryProvider } from '../persistence'
 import { BuilderShell } from './BuilderShell'
 
 function TitleProbe() {
@@ -12,12 +15,15 @@ function TitleProbe() {
 }
 
 function renderShell(fields = [singleLineTextField('a', { label: 'Full name' })]) {
+  const repository = createRepository(createMockStorageAdapter())
   return render(
     <MemoryRouter>
-      <BuilderProvider template={makeTestTemplate(fields)}>
-        <BuilderShell />
-        <TitleProbe />
-      </BuilderProvider>
+      <RepositoryProvider repository={repository}>
+        <BuilderProvider template={makeTestTemplate(fields)}>
+          <BuilderShell />
+          <TitleProbe />
+        </BuilderProvider>
+      </RepositoryProvider>
     </MemoryRouter>,
   )
 }

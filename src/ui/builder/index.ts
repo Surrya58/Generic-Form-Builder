@@ -1,4 +1,5 @@
 export * from './BuilderShell'
+export * from './BuilderHeader'
 export * from './Canvas'
 export * from './ConditionEditor'
 export * from './ConfigPanel'

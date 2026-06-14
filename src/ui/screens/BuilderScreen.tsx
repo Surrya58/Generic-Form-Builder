@@ -23,17 +23,22 @@ export function BuilderScreen() {
   const { templateId } = useParams<{ templateId: string }>()
   const repository = useRepository()
 
-  const [template] = useState<Template | null>(() => {
+  // Load once on mount: the saved template (or a fresh blank one), plus any
+  // autosaved draft so a mid-edit refresh restores the in-progress work.
+  const [loaded] = useState(() => {
     if (!templateId) return null
-    const result = repository.getTemplate(templateId)
-    if (result.ok && result.value) return result.value
-    return createBlankTemplate(templateId)
+    const saved = repository.getTemplate(templateId)
+    const template = saved.ok && saved.value ? saved.value : createBlankTemplate(templateId)
+    const draftResult = repository.getTemplateDraft(templateId)
+    const draftTemplate =
+      draftResult.ok && draftResult.value ? (draftResult.value.payload as Template) : undefined
+    return { template, draftTemplate }
   })
 
-  if (!templateId || !template) return <NotFoundScreen />
+  if (!templateId || !loaded) return <NotFoundScreen />
 
   return (
-    <BuilderProvider template={template}>
+    <BuilderProvider template={loaded.template} draftTemplate={loaded.draftTemplate}>
       <BuilderShell />
     </BuilderProvider>
   )
