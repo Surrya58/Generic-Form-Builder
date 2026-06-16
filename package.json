@@ -15,8 +15,9 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:open": "PW_KEEP_OPEN=1 playwright test guided-tour --headed --workers=1",
+    "test:e2e:headed": "PW_SLOWMO=400 playwright test --headed --workers=1",
+    "test:e2e:watch": "PW_SLOWMO=700 PW_OPEN_REPORT=1 playwright test guided-tour --headed --workers=1",
+    "test:e2e:open": "PW_KEEP_OPEN=1 PW_SLOWMO=600 playwright test guided-tour --headed --workers=1",
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
