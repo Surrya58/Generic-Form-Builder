@@ -29,9 +29,9 @@ function renderShell(fields = [singleLineTextField('a', { label: 'Full name' })]
 }
 
 describe('BuilderShell', () => {
-  it('renders a link back to the templates list', () => {
+  it('renders a control to go back to the templates list', () => {
     renderShell()
-    expect(screen.getByRole('link', { name: /Templates/ })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('button', { name: /Templates/ })).toBeInTheDocument()
   })
 
   it('shows the template title and updates it on edit', async () => {

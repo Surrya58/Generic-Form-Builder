@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import type { FormInstance, Template, ValidationError } from '../../domain'
 import { useFill, validateFill } from '../../state'
 import { AutosaveStatusPill, QuotaRecoveryDialog, useAutosave, useRepository } from '../persistence'
@@ -46,6 +46,14 @@ export function FillForm({ template }: { template: Template }) {
     },
   })
 
+  function handleLeave() {
+    // Leaving the form in-app without submitting abandons this response, so
+    // discard its draft (it's never recoverable from any list anyway). A page
+    // refresh does NOT trigger this handler, so refresh-recovery still works.
+    repository.clearInstanceDraft(state.instanceId)
+    void navigate('/')
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const result = validateFill(template.fields, state.values)
@@ -91,12 +99,13 @@ export function FillForm({ template }: { template: Template }) {
 
   return (
     <div className="mx-auto max-w-2xl p-6">
-      <Link
-        to="/"
+      <button
+        type="button"
+        onClick={handleLeave}
         className="text-sm font-medium text-gray-500 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
       >
         ← Forms
-      </Link>
+      </button>
       <div className="mb-6 mt-2 flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold text-gray-900">{template.title || 'Untitled form'}</h1>
         <AutosaveStatusPill

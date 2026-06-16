@@ -66,4 +66,35 @@ describe('BuilderHeader', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
     expect(title).toHaveValue('Test template')
   })
+
+  it('discards an abandoned (never-committed) template draft when leaving', async () => {
+    const { repository, template } = renderHeader([singleLineTextField('a', { label: 'Name' })])
+    repository.saveTemplateDraft({
+      kind: 'template',
+      refId: template.id,
+      payload: template,
+      updatedAt: new Date().toISOString(),
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: '← Templates' }))
+
+    const draft = repository.getTemplateDraft(template.id)
+    expect(draft.ok && draft.value).toBeNull()
+  })
+
+  it('keeps the draft of a committed template when leaving (preserves unsaved edits)', async () => {
+    const { repository, template } = renderHeader([singleLineTextField('a', { label: 'Name' })])
+    repository.saveTemplate(template) // commit it first
+    repository.saveTemplateDraft({
+      kind: 'template',
+      refId: template.id,
+      payload: { ...template, title: 'Edited but not saved' },
+      updatedAt: new Date().toISOString(),
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: '← Templates' }))
+
+    const draft = repository.getTemplateDraft(template.id)
+    expect(draft.ok && draft.value).not.toBeNull()
+  })
 })

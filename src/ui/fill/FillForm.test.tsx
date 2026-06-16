@@ -65,4 +65,24 @@ describe('FillForm', () => {
     const draft = repository.getInstanceDraft('inst-1')
     expect(draft.ok && draft.value).toBeNull()
   })
+
+  it('discards the instance draft when leaving via the back link without submitting', async () => {
+    const repository = createRepository(createMockStorageAdapter())
+    repository.saveInstanceDraft({
+      kind: 'instance',
+      refId: 'inst-1',
+      payload: { a: 'half-typed' },
+      updatedAt: new Date().toISOString(),
+    })
+    renderForm(repository)
+
+    const before = repository.getInstanceDraft('inst-1')
+    expect(before.ok && before.value).not.toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: '← Forms' }))
+
+    const after = repository.getInstanceDraft('inst-1')
+    expect(after.ok && after.value).toBeNull()
+    expect(screen.getByTestId('location')).toHaveTextContent('/')
+  })
 })

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { validateTemplate, type Field, type Template } from '../../domain'
 import { useBuilder, useIsDirty } from '../../state'
 import { AutosaveStatusPill, QuotaRecoveryDialog, useAutosave, useRepository } from '../persistence'
@@ -30,6 +30,7 @@ export function BuilderHeader() {
   const { state, dispatch } = useBuilder()
   const repository = useRepository()
   const isDirty = useIsDirty()
+  const navigate = useNavigate()
 
   const [previewOpen, setPreviewOpen] = useState(false)
   const [quotaOpen, setQuotaOpen] = useState(false)
@@ -77,15 +78,26 @@ export function BuilderHeader() {
     dispatch({ type: 'discard' })
   }
 
+  function handleLeave() {
+    // A never-committed (brand-new) template that's abandoned has no list entry
+    // to ever resurface it, so discard its draft on leave. For an already-saved
+    // template we keep the draft so unsaved edits survive returning to it.
+    const existing = repository.getTemplate(state.template.id)
+    const isCommitted = existing.ok && existing.value !== null
+    if (!isCommitted) repository.clearTemplateDraft(state.template.id)
+    void navigate('/')
+  }
+
   return (
     <>
       <header className="flex items-center gap-3 border-b border-gray-200 px-4 py-3">
-        <Link
-          to="/"
+        <button
+          type="button"
+          onClick={handleLeave}
           className="shrink-0 text-sm font-medium text-gray-500 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
         >
           ← Templates
-        </Link>
+        </button>
         <input
           aria-label="Template title"
           value={state.template.title}
