@@ -89,7 +89,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
       aria-labelledby={titleId}
       onKeyDown={handleKeyDown}
       onClick={handleBackdropClick}
-      className={`w-full max-w-lg rounded-lg p-0 shadow-xl backdrop:bg-black/50 ${className ?? ''}`}
+      className={`fixed inset-0 m-auto h-fit w-full max-w-lg rounded-lg p-0 shadow-xl backdrop:bg-black/50 ${className ?? ''}`}
     >
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
         <h2 id={titleId} className="text-lg font-semibold text-gray-900">
