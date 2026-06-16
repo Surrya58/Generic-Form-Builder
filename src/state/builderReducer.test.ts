@@ -214,6 +214,23 @@ describe('builderReducer', () => {
     expect(next.savedTemplate).toBe(edited.template)
   })
 
+  it('showValidation turns the marker flag on; markSaved and discard turn it off', () => {
+    const state = setup()
+    expect(state.showValidation).toBe(false)
+
+    const shown = builderReducer(state, { type: 'showValidation' })
+    expect(shown.showValidation).toBe(true)
+
+    const saved = builderReducer(shown, { type: 'markSaved', template: shown.template })
+    expect(saved.showValidation).toBe(false)
+
+    const discarded = builderReducer(
+      builderReducer(saved, { type: 'showValidation' }),
+      { type: 'discard' },
+    )
+    expect(discarded.showValidation).toBe(false)
+  })
+
   it('loadTemplate replaces the template, resets savedTemplate, selection and collapsed state', () => {
     const state = {
       ...setup(),

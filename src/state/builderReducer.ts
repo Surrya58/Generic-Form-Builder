@@ -8,6 +8,12 @@ export interface BuilderState {
   savedTemplate: Template
   selectedFieldId: string | null
   collapsedFieldIds: ReadonlySet<string>
+  /**
+   * Whether builder-time validation markers should be surfaced (the error
+   * summary AND the red borders on offending field cards). Turned on by a
+   * failed Save attempt; cleared on a successful save / discard / load.
+   */
+  showValidation: boolean
 }
 
 export type BuilderAction =
@@ -21,6 +27,7 @@ export type BuilderAction =
   | { type: 'toggleCollapsed'; fieldId: string }
   | { type: 'discard' }
   | { type: 'markSaved'; template: Template }
+  | { type: 'showValidation' }
   | { type: 'loadTemplate'; template: Template }
 
 export function createInitialState(template: Template): BuilderState {
@@ -29,6 +36,7 @@ export function createInitialState(template: Template): BuilderState {
     savedTemplate: template,
     selectedFieldId: null,
     collapsedFieldIds: new Set(),
+    showValidation: false,
   }
 }
 
@@ -131,7 +139,15 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
       return createInitialState(state.savedTemplate)
 
     case 'markSaved':
-      return { ...state, template: action.template, savedTemplate: action.template }
+      return {
+        ...state,
+        template: action.template,
+        savedTemplate: action.template,
+        showValidation: false,
+      }
+
+    case 'showValidation':
+      return state.showValidation ? state : { ...state, showValidation: true }
 
     case 'loadTemplate':
       return createInitialState(action.template)

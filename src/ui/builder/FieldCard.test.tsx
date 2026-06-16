@@ -56,6 +56,30 @@ describe('FieldCard', () => {
     expect(screen.getByText('Untitled single line text')).toBeInTheDocument()
   })
 
+  it('marks the card invalid with a red border when hasError is set', () => {
+    const field = singleLineTextField('a', { label: '' })
+    const { container } = render(
+      <BuilderProvider template={makeTestTemplate([field])}>
+        <FieldCard field={field} renderProps={NOOP_RENDER_PROPS} hasError />
+      </BuilderProvider>,
+    )
+
+    const card = container.querySelector('[aria-invalid="true"]')
+    expect(card).not.toBeNull()
+    expect(card?.className).toContain('border-red-500')
+  })
+
+  it('does not mark the card invalid when hasError is absent', () => {
+    const field = singleLineTextField('a', { label: 'Full name' })
+    const { container } = render(
+      <BuilderProvider template={makeTestTemplate([field])}>
+        <FieldCard field={field} renderProps={NOOP_RENDER_PROPS} />
+      </BuilderProvider>,
+    )
+
+    expect(container.querySelector('[aria-invalid="true"]')).toBeNull()
+  })
+
   it('selects the field when clicked', async () => {
     const field = singleLineTextField('a', { label: 'Full name' })
     render(

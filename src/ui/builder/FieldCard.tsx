@@ -10,10 +10,12 @@ const actionButtonClassName =
 export interface FieldCardProps {
   field: Field
   renderProps: SortableItemRenderProps
+  /** When true, the field has a blocking validation error after a Save attempt — shown as a red border. */
+  hasError?: boolean
 }
 
 /** One row on the Builder canvas: header (select/reorder/duplicate/delete) plus a collapsible summary. */
-export function FieldCard({ field, renderProps }: FieldCardProps) {
+export function FieldCard({ field, renderProps, hasError = false }: FieldCardProps) {
   const { state, dispatch } = useBuilder()
   const definition = getDefinitionForField(field)
   const { dragHandleProps, isDragging, canMoveUp, canMoveDown, moveUp, moveDown } = renderProps
@@ -26,9 +28,16 @@ export function FieldCard({ field, renderProps }: FieldCardProps) {
   const showHiddenBadge = field.defaultVisibility === 'hidden'
   const conditionCount = field.conditions.length
 
+  const borderClass = hasError
+    ? 'border-red-500 ring-1 ring-red-500'
+    : isSelected
+      ? 'border-blue-500 ring-1 ring-blue-500'
+      : 'border-gray-200'
+
   return (
     <div
-      className={`rounded-lg border bg-white ${isSelected ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200'} ${isDragging ? 'shadow-lg' : ''}`}
+      aria-invalid={hasError || undefined}
+      className={`rounded-lg border bg-white ${borderClass} ${isDragging ? 'shadow-lg' : ''}`}
     >
       <div className="flex items-center gap-1 px-2 py-2">
         <DragHandle label={`Reorder ${displayLabel}`} dragHandleProps={dragHandleProps} />

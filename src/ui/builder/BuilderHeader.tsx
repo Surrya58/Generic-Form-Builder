@@ -33,7 +33,6 @@ export function BuilderHeader() {
 
   const [previewOpen, setPreviewOpen] = useState(false)
   const [quotaOpen, setQuotaOpen] = useState(false)
-  const [showErrors, setShowErrors] = useState(false)
 
   const errorIssues = useMemo(
     () => validateTemplate(state.template).filter((issue) => issue.severity === 'error'),
@@ -59,7 +58,8 @@ export function BuilderHeader() {
 
   function handleSave() {
     if (errorIssues.length > 0) {
-      setShowErrors(true)
+      // Surface the error summary AND the red borders on offending field cards.
+      dispatch({ type: 'showValidation' })
       return
     }
     const committed: Template = { ...state.template, updatedAt: new Date().toISOString() }
@@ -70,13 +70,11 @@ export function BuilderHeader() {
     }
     repository.clearTemplateDraft(committed.id)
     dispatch({ type: 'markSaved', template: committed })
-    setShowErrors(false)
   }
 
   function handleDiscard() {
     repository.clearTemplateDraft(state.template.id)
     dispatch({ type: 'discard' })
-    setShowErrors(false)
   }
 
   return (
@@ -125,7 +123,7 @@ export function BuilderHeader() {
         </button>
       </header>
 
-      {showErrors && errorIssues.length > 0 && (
+      {state.showValidation && errorIssues.length > 0 && (
         <div
           role="alert"
           className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800"
